@@ -1,0 +1,75 @@
+// --------------------------------------------------------------------------
+// Description: This program will be used to build a network client/server
+// system that implements the "Daytime small server" as documented in RFC 
+// 867. This is the client portion.
+// --------------------------------------------------------------------------
+
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
+
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+
+#define SERVER_PORT 1054
+#define MAX_LINE 256
+
+int main(int argc, char * argv[]) {
+
+  struct hostent *hp;
+  struct sockaddr_in sin;
+  char *host;
+  char buf[MAX_LINE];
+  int s;
+  int len;
+  
+  if (argc==2) 
+  {
+    host = argv[1];
+  }
+  else
+  {
+    fprintf(stderr, "usage: simplex-talk host\n");
+    exit(1);
+  }
+  
+  /* translate host name into peer's IP address */
+  hp = gethostbyname(host);
+  if(!hp)
+  {
+    fprintf(stderr, "Simplex-Talk: Unknown Host: %s\n", host);
+    exit(1);
+  }
+  
+  /* build address data structure */
+  bzero((char *)&sin, sizeof(sin));
+  sin.sin_family = AF_INET;
+  bcopy(hp->h_addr, (char *)&sin.sin_addr, hp->h_length);  
+  sin.sin_port = htons(SERVER_PORT);
+
+  /* active open */
+  if((s = socket(PF_INET, SOCK_STREAM, 0)) < 0)
+  {
+    printf("The socket call has failed.");
+    exit(1);
+  }
+
+  /* connect to the host */
+  if(connect(s, (struct sockaddr *)&sin, sizeof(sin)) < 0)
+  {
+    printf("The connect call to host has failed.");
+    close(s);
+    exit(1);
+  }
+    
+    bzero(buf, sizeof(buf));
+    send('\n', buf, sizeof(buf), 0);
+    recv(s, buf, sizeof(buf), 0);
+    printf("%s\n", buf);
+    close(s);
+
+  return 0;
+}
